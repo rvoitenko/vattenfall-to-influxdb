@@ -58,5 +58,5 @@ func pushToInflux(t time.Time) {
 }
 
 func main() {
-	doEvery(1*time.Minute, pushToInflux)
+	doEvery(30*time.Minute, pushToInflux)
 }
