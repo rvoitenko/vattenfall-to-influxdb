@@ -1,0 +1,118 @@
+project_name: vattenfall-to-influxdb
+builds:
+  - id: vattenfall-to-influxdb
+    binary: vattenfall-to-influxdb
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    flags:
+      - -trimpath
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s
+      - -w
+      - -X main.version={{.Version}} -X main.commit={{.FullCommit}} -X main.date={{.CommitDate}} -X main.repository={{.GitURL}}
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    goarm:
+      - 6
+      - 7
+archives:
+  - id: vattenfall-to-influxdb
+    builds:
+      - vattenfall-to-influxdb
+    wrap_in_directory: true
+    files:
+      - LICENSE
+      - README.md
+    replacements:
+      darwin: macOS
+    format_overrides:
+      - goos: windows
+        format: zip
+dockers:
+  - use: buildx
+    goos: linux
+    goarch: amd64
+    image_templates:
+      - "rvoitenko/{{ .ProjectName }}:{{ .Version }}-amd64"
+      - "rvoitenko/{{ .ProjectName }}:latest-amd64"
+    build_flag_templates:
+      - --platform=linux/amd64
+      - --label=org.opencontainers.image.created={{.Date}}
+      - --label=org.opencontainers.image.title={{.ProjectName}}
+      - --label=org.opencontainers.image.description={{ .ProjectName }}
+      - --label=org.opencontainers.image.url=https://github.com/rvoitenko/{{ .ProjectName }}
+      - --label=org.opencontainers.image.source=https://github.com/rvoitenko/{{ .ProjectName }}
+      - --label=org.opencontainers.image.revision={{.FullCommit}}
+      - --label=org.opencontainers.image.version={{.Version}}
+      - --label=org.opencontainers.image.licenses=MIT
+
+  - use: buildx
+    goos: linux
+    goarch: arm64
+    image_templates:
+      - "rvoitenko/{{ .ProjectName }}:{{ .Version }}-arm64v8"
+      - "rvoitenko/{{ .ProjectName }}:latest-arm64v8"
+    build_flag_templates:
+      - --platform=linux/arm64/v8
+      - --label=org.opencontainers.image.created={{.Date}}
+      - --label=org.opencontainers.image.title={{.ProjectName}}
+      - --label=org.opencontainers.image.description={{ .ProjectName }}
+      - --label=org.opencontainers.image.url=https://github.com/rvoitenko/{{ .ProjectName }}
+      - --label=org.opencontainers.image.source=https://github.com/rvoitenko/{{ .ProjectName }}
+      - --label=org.opencontainers.image.revision={{.FullCommit}}
+      - --label=org.opencontainers.image.version={{.Version}}
+      - --label=org.opencontainers.image.licenses=MIT
+  - use: buildx
+    goos: linux
+    goarch: arm
+    goarm: 6
+    image_templates:
+      - "rvoitenko/{{ .ProjectName }}:{{ .Version }}-armv6"
+      - "rvoitenko/{{ .ProjectName }}:latest-armv6"
+    build_flag_templates:
+      - --platform=linux/arm/v6
+      - --label=org.opencontainers.image.created={{.Date}}
+      - --label=org.opencontainers.image.title={{.ProjectName}}
+      - --label=org.opencontainers.image.description={{ .ProjectName }}
+      - --label=org.opencontainers.image.url=https://github.com/rvoitenko/{{ .ProjectName }}
+      - --label=org.opencontainers.image.source=https://github.com/rvoitenko/{{ .ProjectName }}
+      - --label=org.opencontainers.image.revision={{.FullCommit}}
+      - --label=org.opencontainers.image.version={{.Version}}
+      - --label=org.opencontainers.image.licenses=MIT
+  - use: buildx
+    goos: linux
+    goarch: arm
+    goarm: 7
+    image_templates:
+      - "rvoitenko/{{ .ProjectName }}:{{ .Version }}-armv7"
+      - "rvoitenko/{{ .ProjectName }}:latest-armv7"
+    build_flag_templates:
+      - --platform=linux/arm/v7
+      - --label=org.opencontainers.image.created={{.Date}}
+      - --label=org.opencontainers.image.title={{.ProjectName}}
+      - --label=org.opencontainers.image.description={{ .ProjectName }}
+      - --label=org.opencontainers.image.url=https://github.com/rvoitenko/{{ .ProjectName }}
+      - --label=org.opencontainers.image.source=https://github.com/rvoitenko/{{ .ProjectName }}
+      - --label=org.opencontainers.image.revision={{.FullCommit}}
+      - --label=org.opencontainers.image.version={{.Version}}
+      - --label=org.opencontainers.image.licenses=MIT
+docker_manifests:
+  - name_template: rvoitenko/{{ .ProjectName }}:{{ .Version }}
+    image_templates:
+      - rvoitenko/{{ .ProjectName }}:{{ .Version }}-amd64
+      - rvoitenko/{{ .ProjectName }}:{{ .Version }}-arm64v8
+      - rvoitenko/{{ .ProjectName }}:{{ .Version }}-armv6
+      - rvoitenko/{{ .ProjectName }}:{{ .Version }}-armv7
+  - name_template: rvoitenko/{{ .ProjectName }}:latest
+    image_templates:
+      - rvoitenko/{{ .ProjectName }}:latest-amd64
+      - rvoitenko/{{ .ProjectName }}:latest-arm64v8
+      - rvoitenko/{{ .ProjectName }}:latest-armv6
+      - rvoitenko/{{ .ProjectName }}:latest-armv7
