@@ -30,11 +30,6 @@ services:
     ports:
       - '127.0.0.1:3000:3000'
 
-  renderer:
-    image: grafana/grafana-image-renderer:latest
-    ports:
-      - 8081
-
   vattenfall:
     image: rvoitenko/vattenfall-to-influxdb:0.0.1
     environment:
