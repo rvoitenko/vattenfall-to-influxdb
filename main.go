@@ -31,10 +31,10 @@ func doEvery(d time.Duration, f func(time.Time)) {
 }
 
 func pushToInflux(t time.Time) {
-	client := &http.Client{}
+	httpClient := &http.Client{}
 	req, _ := http.NewRequest("GET", "https://www.vattenfall.se/api/price/spot/pricearea/"+time.Now().Format("2006-01-02")+"/"+time.Now().AddDate(0, 0, 1).Format("2006-01-02")+"/SN3", nil)
 	req.Header.Set("User-Agent", fmt.Sprintf("vattenfall-to-influxdb/%s (+https://github.com/rvoitenko/vattenfall-to-influxdb)", version))
-	resp, err := client.Do(req)
+	resp, err := httpClient.Do(req)
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body) // response body is []byte
 	if err != nil {
