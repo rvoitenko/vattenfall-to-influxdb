@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	version = "0.0.3"
+	version = "0.0.4"
 )
 
 type Response []struct {
@@ -36,16 +36,15 @@ func pushToInflux(t time.Time) {
 	req.Header.Set("User-Agent", fmt.Sprintf("vattenfall-to-influxdb/%s (+https://github.com/rvoitenko/vattenfall-to-influxdb)", version))
 	resp, err := httpClient.Do(req)
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body) // response body is []byte
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("No response from request")
 	}
 	var result Response
-	if err := json.Unmarshal(body, &result); err != nil { // Parse []byte to the go struct pointer
+	if err := json.Unmarshal(body, &result); err != nil {
 		fmt.Println("Can not unmarshal JSON")
 	}
 
-	// https://github.com/influxdata/influxdb-client-go
 	client := influxdb2.NewClient(os.Getenv("INFLUXDB_URL"), os.Getenv("INFLUXDB_TOKEN"))
 	writeAPI := client.WriteAPIBlocking(os.Getenv("INFLUXDB_ORG"), os.Getenv("INFLUXDB_BUCKET"))
 	for _, rec := range result {
@@ -54,10 +53,21 @@ func pushToInflux(t time.Time) {
 			fmt.Println(error)
 			return
 		}
+
+		// Load the desired time zone, e.g., "Europe/Stockholm" or any other relevant time zone
+		location, locErr := time.LoadLocation("Your/Timezone")
+		if locErr != nil {
+			fmt.Println(locErr)
+			return
+		}
+
+		// Convert the parsed time to the loaded time zone
+		dateInLocation := date.In(location)
+
 		p := influxdb2.NewPoint("current",
 			map[string]string{"unit": "price"},
 			map[string]interface{}{"last": rec.Value},
-			date.Add(-1*time.Hour))
+			dateInLocation) // Use the adjusted time here
 		writeAPI.WritePoint(context.Background(), p)
 	}
 	client.Close()
