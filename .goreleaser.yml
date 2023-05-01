@@ -1,4 +1,6 @@
 project_name: vattenfall-to-influxdb
+env:
+  - GITHUB_USERNAME=rvoitenko
 builds:
   - id: vattenfall-to-influxdb
     binary: vattenfall-to-influxdb
@@ -34,15 +36,15 @@ dockers:
     goos: linux
     goarch: amd64
     image_templates:
-      - "rvoitenko/{{ .ProjectName }}:{{ .Version }}-amd64"
-      - "rvoitenko/{{ .ProjectName }}:latest-amd64"
+      - "{{ .Env.GITHUB_USERNAME }}/{{ .ProjectName }}:{{ .Version }}-amd64"
+      - "{{ .Env.GITHUB_USERNAME }}/{{ .ProjectName }}:latest-amd64"
     build_flag_templates:
       - --platform=linux/amd64
       - --label=org.opencontainers.image.created={{.Date}}
       - --label=org.opencontainers.image.title={{.ProjectName}}
       - --label=org.opencontainers.image.description={{ .ProjectName }}
-      - --label=org.opencontainers.image.url=https://github.com/rvoitenko/{{ .ProjectName }}
-      - --label=org.opencontainers.image.source=https://github.com/rvoitenko/{{ .ProjectName }}
+      - --label=org.opencontainers.image.url=https://github.com/{{ .Env.GITHUB_USERNAME }}/{{ .ProjectName }}
+      - --label=org.opencontainers.image.source=https://github.com/{{ .Env.GITHUB_USERNAME }}/{{ .ProjectName }}
       - --label=org.opencontainers.image.revision={{.FullCommit}}
       - --label=org.opencontainers.image.version={{.Version}}
       - --label=org.opencontainers.image.licenses=MIT
@@ -51,15 +53,15 @@ dockers:
     goos: linux
     goarch: arm64
     image_templates:
-      - "rvoitenko/{{ .ProjectName }}:{{ .Version }}-arm64v8"
-      - "rvoitenko/{{ .ProjectName }}:latest-arm64v8"
+      - "{{ .Env.GITHUB_USERNAME }}/{{ .ProjectName }}:{{ .Version }}-arm64v8"
+      - "{{ .Env.GITHUB_USERNAME }}/{{ .ProjectName }}:latest-arm64v8"
     build_flag_templates:
       - --platform=linux/arm64/v8
       - --label=org.opencontainers.image.created={{.Date}}
       - --label=org.opencontainers.image.title={{.ProjectName}}
       - --label=org.opencontainers.image.description={{ .ProjectName }}
-      - --label=org.opencontainers.image.url=https://github.com/rvoitenko/{{ .ProjectName }}
-      - --label=org.opencontainers.image.source=https://github.com/rvoitenko/{{ .ProjectName }}
+      - --label=org.opencontainers.image.url=https://github.com/{{ .Env.GITHUB_USERNAME }}/{{ .ProjectName }}
+      - --label=org.opencontainers.image.source=https://github.com/{{ .Env.GITHUB_USERNAME }}/{{ .ProjectName }}
       - --label=org.opencontainers.image.revision={{.FullCommit}}
       - --label=org.opencontainers.image.version={{.Version}}
       - --label=org.opencontainers.image.licenses=MIT
@@ -68,15 +70,15 @@ dockers:
     goarch: arm
     goarm: 6
     image_templates:
-      - "rvoitenko/{{ .ProjectName }}:{{ .Version }}-armv6"
-      - "rvoitenko/{{ .ProjectName }}:latest-armv6"
+      - "{{ .Env.GITHUB_USERNAME }}/{{ .ProjectName }}:{{ .Version }}-armv6"
+      - "{{ .Env.GITHUB_USERNAME }}/{{ .ProjectName }}:latest-armv6"
     build_flag_templates:
       - --platform=linux/arm/v6
       - --label=org.opencontainers.image.created={{.Date}}
       - --label=org.opencontainers.image.title={{.ProjectName}}
       - --label=org.opencontainers.image.description={{ .ProjectName }}
-      - --label=org.opencontainers.image.url=https://github.com/rvoitenko/{{ .ProjectName }}
-      - --label=org.opencontainers.image.source=https://github.com/rvoitenko/{{ .ProjectName }}
+      - --label=org.opencontainers.image.url=https://github.com/{{ .Env.GITHUB_USERNAME }}/{{ .ProjectName }}
+      - --label=org.opencontainers.image.source=https://github.com/{{ .Env.GITHUB_USERNAME }}/{{ .ProjectName }}
       - --label=org.opencontainers.image.revision={{.FullCommit}}
       - --label=org.opencontainers.image.version={{.Version}}
       - --label=org.opencontainers.image.licenses=MIT
@@ -85,28 +87,28 @@ dockers:
     goarch: arm
     goarm: 7
     image_templates:
-      - "rvoitenko/{{ .ProjectName }}:{{ .Version }}-armv7"
-      - "rvoitenko/{{ .ProjectName }}:latest-armv7"
+      - "{{ .Env.GITHUB_USERNAME }}/{{ .ProjectName }}:{{ .Version }}-armv7"
+      - "{{ .Env.GITHUB_USERNAME }}/{{ .ProjectName }}:latest-armv7"
     build_flag_templates:
       - --platform=linux/arm/v7
       - --label=org.opencontainers.image.created={{.Date}}
       - --label=org.opencontainers.image.title={{.ProjectName}}
       - --label=org.opencontainers.image.description={{ .ProjectName }}
-      - --label=org.opencontainers.image.url=https://github.com/rvoitenko/{{ .ProjectName }}
-      - --label=org.opencontainers.image.source=https://github.com/rvoitenko/{{ .ProjectName }}
+      - --label=org.opencontainers.image.url=https://github.com/{{ .Env.GITHUB_USERNAME }}/{{ .ProjectName }}
+      - --label=org.opencontainers.image.source=https://github.com/{{ .Env.GITHUB_USERNAME }}/{{ .ProjectName }}
       - --label=org.opencontainers.image.revision={{.FullCommit}}
       - --label=org.opencontainers.image.version={{.Version}}
       - --label=org.opencontainers.image.licenses=MIT
 docker_manifests:
-  - name_template: rvoitenko/{{ .ProjectName }}:{{ .Version }}
+  - name_template: {{ .Env.GITHUB_USERNAME }}/{{ .ProjectName }}:{{ .Version }}
     image_templates:
-      - rvoitenko/{{ .ProjectName }}:{{ .Version }}-amd64
-      - rvoitenko/{{ .ProjectName }}:{{ .Version }}-arm64v8
-      - rvoitenko/{{ .ProjectName }}:{{ .Version }}-armv6
-      - rvoitenko/{{ .ProjectName }}:{{ .Version }}-armv7
-  - name_template: rvoitenko/{{ .ProjectName }}:latest
+      - {{ .Env.GITHUB_USERNAME }}/{{ .ProjectName }}:{{ .Version }}-amd64
+      - {{ .Env.GITHUB_USERNAME }}/{{ .ProjectName }}:{{ .Version }}-arm64v8
+      - {{ .Env.GITHUB_USERNAME }}/{{ .ProjectName }}:{{ .Version }}-armv6
+      - {{ .Env.GITHUB_USERNAME }}/{{ .ProjectName }}:{{ .Version }}-armv7
+  - name_template: {{ .Env.GITHUB_USERNAME }}/{{ .ProjectName }}:latest
     image_templates:
-      - rvoitenko/{{ .ProjectName }}:latest-amd64
-      - rvoitenko/{{ .ProjectName }}:latest-arm64v8
-      - rvoitenko/{{ .ProjectName }}:latest-armv6
-      - rvoitenko/{{ .ProjectName }}:latest-armv7
+      - {{ .Env.GITHUB_USERNAME }}/{{ .ProjectName }}:latest-amd64
+      - {{ .Env.GITHUB_USERNAME }}/{{ .ProjectName }}:latest-arm64v8
+      - {{ .Env.GITHUB_USERNAME }}/{{ .ProjectName }}:latest-armv6
+      - {{ .Env.GITHUB_USERNAME }}/{{ .ProjectName }}:latest-armv7
