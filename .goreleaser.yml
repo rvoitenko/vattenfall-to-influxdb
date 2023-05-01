@@ -14,7 +14,6 @@ builds:
     goos:
       - darwin
       - linux
-      - windows
     goarch:
       - amd64
       - arm64
@@ -30,9 +29,6 @@ archives:
     files:
       - LICENSE
       - README.md
-    format_overrides:
-      - goos: windows
-        format: zip
 dockers:
   - use: buildx
     goos: linux
