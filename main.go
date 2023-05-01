@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	version = "0.0.7"
+	version = "0.0.8"
 )
 
 type Response []struct {
@@ -64,8 +64,8 @@ func pushToInflux(t time.Time) {
 			return
 		}
 
-		// Convert the parsed time to the loaded time zone
-		dateInLocation := date.In(location)
+		// Convert the parsed time from UTC to the loaded time zone
+		dateInLocation := date.UTC().In(location)
 
 		p := influxdb2.NewPoint("current",
 			map[string]string{"unit": "price"},
