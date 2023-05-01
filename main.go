@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	version = "0.0.8"
+	version = "0.0.9"
 )
 
 type Response []struct {
@@ -51,26 +51,23 @@ func pushToInflux(t time.Time) {
 	client := influxdb2.NewClient(os.Getenv("INFLUXDB_URL"), os.Getenv("INFLUXDB_TOKEN"))
 	writeAPI := client.WriteAPIBlocking(os.Getenv("INFLUXDB_ORG"), os.Getenv("INFLUXDB_BUCKET"))
 	for _, rec := range result {
-		date, error := time.Parse("2006-01-02T15:04:05", rec.TimeStamp)
-		if error != nil {
-			fmt.Println(error)
-			return
-		}
-
-		// Load the desired time zone, e.g., "Europe/Stockholm" or any other relevant time zone
 		location, locErr := time.LoadLocation("Europe/Stockholm")
 		if locErr != nil {
 			fmt.Println(locErr)
 			return
 		}
 
-		// Convert the parsed time from UTC to the loaded time zone
-		dateInLocation := date.UTC().In(location)
+		// Parse the timestamp using the Europe/Stockholm time zone
+		date, error := time.ParseInLocation("2006-01-02T15:04:05", rec.TimeStamp, location)
+		if error != nil {
+			fmt.Println(error)
+			return
+		}
 
 		p := influxdb2.NewPoint("current",
 			map[string]string{"unit": "price"},
 			map[string]interface{}{"last": rec.Value},
-			dateInLocation) // Use the adjusted time here
+			date)
 		writeAPI.WritePoint(context.Background(), p)
 	}
 	client.Close()
