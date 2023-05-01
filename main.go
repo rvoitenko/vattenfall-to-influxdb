@@ -8,11 +8,12 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 )
 
 var (
-	version = "0.0.4"
+	version = "0.0.6"
 )
 
 type Response []struct {
@@ -75,5 +76,16 @@ func pushToInflux(t time.Time) {
 }
 
 func main() {
-	doEvery(30*time.Minute, pushToInflux)
+	intervalStr := os.Getenv("INTERVAL")
+	interval := 30 // Default interval in minutes
+	if intervalStr != "" {
+		intervalInt, err := strconv.Atoi(intervalStr)
+		if err == nil {
+			interval = intervalInt
+		} else {
+			fmt.Println("Invalid INTERVAL value, using default 30 minutes")
+		}
+	}
+
+	doEvery(time.Duration(interval)*time.Minute, pushToInflux)
 }
