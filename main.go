@@ -10,10 +10,12 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	_ "time/tzdata" // Add this line to embed the IANA Time Zone database
 )
 
 var (
-	version = "0.0.6"
+	version = "0.0.7"
 )
 
 type Response []struct {
