@@ -55,7 +55,7 @@ func pushToInflux(t time.Time) {
 		}
 
 		// Load the desired time zone, e.g., "Europe/Stockholm" or any other relevant time zone
-		location, locErr := time.LoadLocation("Your/Timezone")
+		location, locErr := time.LoadLocation("Europe/Stockholm")
 		if locErr != nil {
 			fmt.Println(locErr)
 			return
