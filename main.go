@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	version = "0.0.10"
+	version = "0.0.11"
 	debug   bool // Add this line for the debug flag
 )
 
@@ -36,7 +36,9 @@ func doEvery(d time.Duration, f func(time.Time)) {
 
 func pushToInflux(t time.Time) {
 	httpClient := &http.Client{}
-	url := "https://www.vattenfall.se/api/price/spot/pricearea/" + time.Now().Format("2006-01-02") + "/" + time.Now().AddDate(0, 0, 1).Format("2006-01-02") + "/SN3"
+	// Set current time to the end of the day before adding a day
+    endOfDay := time.Now().Truncate(24 * time.Hour).Add(24*time.Hour - 1*time.Second)
+    url := "https://www.vattenfall.se/api/price/spot/pricearea/" + time.Now().Format("2006-01-02") + "/" + endOfDay.AddDate(0, 0, 1).Format("2006-01-02") + "/SN3"
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("User-Agent", fmt.Sprintf("vattenfall-to-influxdb/%s (+https://github.com/rvoitenko/vattenfall-to-influxdb)", version))
 	resp, err := httpClient.Do(req)
