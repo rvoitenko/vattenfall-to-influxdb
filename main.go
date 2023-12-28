@@ -1,10 +1,12 @@
 package main
 
 import (
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -15,7 +17,7 @@ import (
 )
 
 var (
-	version = "0.0.11"
+	version = "0.0.12"
 	debug   bool // Add this line for the debug flag
 )
 
@@ -36,17 +38,35 @@ func doEvery(d time.Duration, f func(time.Time)) {
 
 func pushToInflux(t time.Time) {
 	httpClient := &http.Client{}
-	// Set current time to the end of the day before adding a day
-    endOfDay := time.Now().Truncate(24 * time.Hour).Add(24*time.Hour - 1*time.Second)
-    url := "https://www.vattenfall.se/api/price/spot/pricearea/" + time.Now().Format("2006-01-02") + "/" + endOfDay.AddDate(0, 0, 1).Format("2006-01-02") + "/SN3"
+	endOfDay := time.Now().Truncate(24 * time.Hour).Add(24*time.Hour - 1*time.Second)
+	url := "https://www.vattenfall.se/api/price/spot/pricearea/" + time.Now().Format("2006-01-02") + "/" + endOfDay.AddDate(0, 0, 1).Format("2006-01-02") + "/SN3"
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("User-Agent", fmt.Sprintf("vattenfall-to-influxdb/%s (+https://github.com/rvoitenko/vattenfall-to-influxdb)", version))
 	resp, err := httpClient.Do(req)
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("No response from request")
+		fmt.Println("Error on request:", err)
+		return
 	}
+	defer resp.Body.Close()
+
+	var reader io.Reader
+	switch resp.Header.Get("Content-Encoding") {
+	case "gzip":
+		reader, err = gzip.NewReader(resp.Body)
+		if err != nil {
+			fmt.Println("Error on gzip decompression:", err)
+			return
+		}
+	default:
+		reader = resp.Body
+	}
+
+	body, err := ioutil.ReadAll(reader)
+	if err != nil {
+		fmt.Println("Error reading response body:", err)
+		return
+	}
+
 	var result Response
 	if err := json.Unmarshal(body, &result); err != nil {
 		fmt.Println("Can not unmarshal JSON")
@@ -65,7 +85,6 @@ func pushToInflux(t time.Time) {
 				return
 			}
 
-			// Parse the timestamp using the Europe/Stockholm time zone
 			date, error := time.ParseInLocation("2006-01-02T15:04:05", rec.TimeStamp, location)
 			if error != nil {
 				fmt.Println(error)
