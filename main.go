@@ -39,7 +39,7 @@ func doEvery(d time.Duration, f func(time.Time)) {
 func pushToInflux(t time.Time) {
 	httpClient := &http.Client{}
 	endOfDay := time.Now().Truncate(24 * time.Hour).Add(24*time.Hour - 1*time.Second)
-	url := "https://www.vattenfall.se/api/price/spot/pricearea/" + time.Now().Format("2006-01-02") + "/" + endOfDay.AddDate(0, 0, 1).Format("2006-01-02") + "/SN3"
+	url := "https://www.vattenfall.se/api/price/spot/pricearea/" + time.Now().Format("2006-01-02") + "/" + endOfDay.AddDate(0, 0, 2).Format("2006-01-02") + "/SN3"
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("User-Agent", fmt.Sprintf("vattenfall-to-influxdb/%s (+https://github.com/rvoitenko/vattenfall-to-influxdb)", version))
 	resp, err := httpClient.Do(req)
@@ -90,11 +90,15 @@ func pushToInflux(t time.Time) {
 				fmt.Println(error)
 				return
 			}
-
+            //tags := map[string]string{"unit": "price"}
+            //fields := map[string]interface{}{"last": rec.Value}
 			p := influxdb2.NewPoint("current",
 				map[string]string{"unit": "price"},
 				map[string]interface{}{"last": rec.Value},
 				date)
+			//fmt.Printf("Writing data point to InfluxDB: measurement=%s, tags=%v, fields=%v, timestamp=%s\n", "current", tags, fields, date)
+			//fmt.Println(result)
+			//fmt.Printf("URL: %s\n", url)
 			writeAPI.WritePoint(context.Background(), p)
 		}
 		client.Close()
