@@ -39,8 +39,11 @@ func pushToInflux(t time.Time) {
     endOfDay := time.Now().Truncate(24 * time.Hour).Add(24*time.Hour - 1*time.Second)
     url := "https://www.vattenfall.se/api/price/spot/pricearea/" + time.Now().Format("2006-01-02") + "/" + endOfDay.AddDate(0, 0, 2).Format("2006-01-02") + "/SN3"
 
+    // Set the custom user agent
+    userAgent := "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
     resp, err := client.R().
-        SetHeader("User-Agent", fmt.Sprintf("vattenfall-to-influxdb/%s (+https://github.com/rvoitenko/vattenfall-to-influxdb)", version)).
+        SetHeader("User-Agent", userAgent).
         Get(url)
 
     if err != nil {
