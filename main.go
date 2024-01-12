@@ -10,12 +10,12 @@ import (
     "strconv"
     "time"
 
-    _ "time/tzdata" // Add this line to embed the IANA Time Zone database
+    _ "time/tzdata" // Embed the IANA Time Zone database
 )
 
 var (
-    version = "0.0.16"
-    debug   bool // Add this line for the debug flag
+    version = "0.0.17"
+    debug   bool
 )
 
 type Response []struct {
@@ -39,11 +39,8 @@ func pushToInflux(t time.Time) {
     endOfDay := time.Now().Truncate(24 * time.Hour).Add(24*time.Hour - 1*time.Second)
     url := "https://www.vattenfall.se/api/price/spot/pricearea/" + time.Now().Format("2006-01-02") + "/" + endOfDay.AddDate(0, 0, 2).Format("2006-01-02") + "/SN3"
 
-    // Set the custom user agent
-    userAgent := "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-
     resp, err := client.R().
-        SetHeader("User-Agent", userAgent).
+        SetHeader("User-Agent", fmt.Sprintf("vattenfall-to-influxdb/%s (+https://github.com/rvoitenko/vattenfall-to-influxdb)", version)).
         Get(url)
 
     if err != nil {
@@ -59,18 +56,12 @@ func pushToInflux(t time.Time) {
 
     if debug {
         fmt.Printf("URL: %s\n", url)
-        fmt.Println(result) // Print the result for debugging
+        fmt.Println(result)
     } else {
         influxClient := influxdb2.NewClient(os.Getenv("INFLUXDB_URL"), os.Getenv("INFLUXDB_TOKEN"))
         writeAPI := influxClient.WriteAPIBlocking(os.Getenv("INFLUXDB_ORG"), os.Getenv("INFLUXDB_BUCKET"))
         for _, rec := range result {
-            location, locErr := time.LoadLocation("Europe/Stockholm")
-            if locErr != nil {
-                fmt.Println(locErr)
-                return
-            }
-
-            date, error := time.ParseInLocation("2006-01-02T15:04:05", rec.TimeStamp, location)
+            date, error := time.Parse("2006-01-02T15:04:05", rec.TimeStamp)
             if error != nil {
                 fmt.Println(error)
                 return
@@ -88,8 +79,15 @@ func pushToInflux(t time.Time) {
 }
 
 func main() {
+    location, err := time.LoadLocation("Europe/Stockholm")
+    if err != nil {
+        fmt.Println("Error loading location 'Europe/Stockholm':", err)
+        os.Exit(1)
+    }
+    time.Local = location
+
     intervalStr := os.Getenv("INTERVAL")
-    interval := 1800 // Default interval in seconds
+    interval := 1800
     if intervalStr != "" {
         intervalInt, err := strconv.Atoi(intervalStr)
         if err == nil {
