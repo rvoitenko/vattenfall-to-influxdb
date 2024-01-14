@@ -14,7 +14,7 @@ import (
 )
 
 var (
-    version = "0.0.18"
+    version = "0.0.19"
     debug   bool
 )
 
@@ -36,11 +36,24 @@ func doEvery(d time.Duration, f func(time.Time)) {
 func pushToInflux(t time.Time) {
     client := resty.New()
 
+    // Read the PRICE_AREA environment variable, default to "SN3" if not set
+    priceArea := os.Getenv("PRICE_AREA")
+    if priceArea == "" {
+        fmt.Println("Error: PRICE_AREA environment variable is not set")
+        os.Exit(1)
+    }
+
     endOfDay := time.Now().Truncate(24 * time.Hour).Add(24*time.Hour - 1*time.Second)
-    url := "https://www.vattenfall.se/api/price/spot/pricearea/" + time.Now().Format("2006-01-02") + "/" + endOfDay.AddDate(0, 0, 1).Format("2006-01-02") + "/SN3"
+    url := fmt.Sprintf("https://www.vattenfall.se/api/price/spot/pricearea/%s/%s/%s?_=%d",
+        time.Now().Format("2006-01-02"),
+        endOfDay.AddDate(0, 0, 1).Format("2006-01-02"),
+        priceArea,
+        time.Now().UnixNano()) // UnixNano returns a unique number
 
     resp, err := client.R().
         SetHeader("User-Agent", fmt.Sprintf("vattenfall-to-influxdb/%s (+https://github.com/rvoitenko/vattenfall-to-influxdb)", version)).
+        SetHeader("Cache-Control", "no-cache, no-store, must-revalidate").
+        SetHeader("Pragma", "no-cache").
         Get(url)
 
     if err != nil {
