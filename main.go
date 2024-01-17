@@ -4,28 +4,27 @@ import (
     "context"
     "encoding/json"
     "fmt"
-    "github.com/go-resty/resty/v2"
-    influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+    "io/ioutil"
+    "net/http"
     "os"
     "strconv"
     "time"
 
+    influxdb2 "github.com/influxdata/influxdb-client-go/v2"
     _ "time/tzdata" // Embed the IANA Time Zone database
 )
 
 var (
-    version = "0.0.19"
+    version = "0.1.0"
     debug   bool
 )
 
-type Response []struct {
-    TimeStamp     string  `json:"TimeStamp"`
-    TimeStampDay  string  `json:"TimeStampDay"`
-    TimeStampHour string  `json:"TimeStampHour"`
-    Value         float64 `json:"Value"`
-    PriceArea     string  `json:"PriceArea"`
-    Unit          string  `json:"Unit"`
+type PriceData struct {
+    SEKPerKWh  float64 `json:"SEK_per_kWh"`
+    TimeStart  string  `json:"time_start"`
 }
+
+type Response []PriceData
 
 func doEvery(d time.Duration, f func(time.Time)) {
     for x := range time.Tick(d) {
@@ -34,61 +33,91 @@ func doEvery(d time.Duration, f func(time.Time)) {
 }
 
 func pushToInflux(t time.Time) {
-    client := resty.New()
-
-    // Read the PRICE_AREA environment variable, default to "SN3" if not set
     priceArea := os.Getenv("PRICE_AREA")
     if priceArea == "" {
         fmt.Println("Error: PRICE_AREA environment variable is not set")
         os.Exit(1)
     }
 
-    endOfDay := time.Now().Truncate(24 * time.Hour).Add(24*time.Hour - 1*time.Second)
-    url := fmt.Sprintf("https://www.vattenfall.se/api/price/spot/pricearea/%s/%s/%s?_=%d",
-        time.Now().Format("2006-01-02"),
-        endOfDay.AddDate(0, 0, 1).Format("2006-01-02"),
-        priceArea,
-        time.Now().UnixNano()) // UnixNano returns a unique number
+    now := time.Now()
+    today := now.Format("2006/01-02")
+    tomorrow := now.AddDate(0, 0, 1).Format("2006/01-02")
 
-    resp, err := client.R().
-        SetHeader("User-Agent", fmt.Sprintf("vattenfall-to-influxdb/%s (+https://github.com/rvoitenko/vattenfall-to-influxdb)", version)).
-        SetHeader("Cache-Control", "no-cache, no-store, must-revalidate").
-        SetHeader("Pragma", "no-cache").
-        Get(url)
-
-    if err != nil {
-        fmt.Println("Error on request:", err)
-        return
+    var urls []string
+    baseURL := "https://www.elprisetjustnu.se/api/v1/prices/"
+    urls = append(urls, baseURL+today+"_"+priceArea+".json")
+    if now.Hour() >= 14 && now.Minute() >= 30 {
+        urls = append(urls, baseURL+tomorrow+"_"+priceArea+".json")
     }
 
-    var result Response
-    if err := json.Unmarshal(resp.Body(), &result); err != nil {
-        fmt.Println("Can not unmarshal JSON", err)
-        return
-    }
+    client := &http.Client{}
+    for _, url := range urls {
+        if debug {
+            fmt.Println("Fetching URL:", url)
+        }
 
-    if debug {
-        fmt.Printf("URL: %s\n", url)
-        fmt.Println(result)
-    } else {
+        req, err := http.NewRequest("GET", url, nil)
+        if err != nil {
+            fmt.Println("Error creating request:", err)
+            continue
+        }
+        req.Header.Set("User-Agent", fmt.Sprintf("vattenfall-to-influxdb/%s (+https://github.com/rvoitenko/vattenfall-to-influxdb)", version))
+
+        resp, err := client.Do(req)
+        if err != nil {
+            fmt.Println("Error on request:", err)
+            continue
+        }
+        defer resp.Body.Close()
+
+        if resp.StatusCode != http.StatusOK {
+            fmt.Printf("Request to %s failed with status code: %d\n", url, resp.StatusCode)
+            bodyBytes, _ := ioutil.ReadAll(resp.Body)
+            fmt.Println("Response body:", string(bodyBytes))
+            continue
+        }
+
+        body, err := ioutil.ReadAll(resp.Body)
+        if err != nil {
+            fmt.Println("Error reading response body:", err)
+            continue
+        }
+
+        var result Response
+        if err := json.Unmarshal(body, &result); err != nil {
+            fmt.Println("Can not unmarshal JSON:", err)
+            continue
+        }
+
+        if debug {
+            fmt.Println("Received data:", result)
+        }
+
         influxClient := influxdb2.NewClient(os.Getenv("INFLUXDB_URL"), os.Getenv("INFLUXDB_TOKEN"))
         writeAPI := influxClient.WriteAPIBlocking(os.Getenv("INFLUXDB_ORG"), os.Getenv("INFLUXDB_BUCKET"))
-        for _, rec := range result {
-            date, error := time.Parse("2006-01-02T15:04:05", rec.TimeStamp)
-            if error != nil {
-                fmt.Println(error)
-                return
+        for _, data := range result {
+            startDate, err := time.Parse(time.RFC3339, data.TimeStart)
+            if err != nil {
+                fmt.Println("Error parsing start time:", err)
+                continue
             }
 
-            p := influxdb2.NewPoint("current",
+            point := influxdb2.NewPoint("current",
                 map[string]string{"unit": "price"},
-                map[string]interface{}{"last": rec.Value},
-                date)
-            writeAPI.WritePoint(context.Background(), p)
+                map[string]interface{}{"last": data.SEKPerKWh},
+                startDate)
+
+            if debug {
+                fmt.Printf("Data to be written to InfluxDB: Time: %s, SEK_per_kWh: %f\n", data.TimeStart, data.SEKPerKWh)
+            }
+
+            writeAPI.WritePoint(context.Background(), point)
         }
         influxClient.Close()
     }
-    fmt.Printf("%v: Tick\n", t)
+    if debug {
+        fmt.Printf("%v: Tick\n", t)
+    }
 }
 
 func main() {
