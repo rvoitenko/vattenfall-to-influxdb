@@ -37,7 +37,7 @@ services:
       INFLUXDB_TOKEN: 'some_password'
       INFLUXDB_BUCKET: 'elprice'
       INFLUXDB_ORG: 'iot'
-      PRICE_AREA: 'SN3'
+      PRICE_AREA: 'SE3'
 ```
 
 Then you add InfluxDB as a datasource in Grafana(choose Flux as query language):
