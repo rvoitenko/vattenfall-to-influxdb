@@ -15,7 +15,7 @@ import (
 )
 
 var (
-    version = "0.1.0"
+    version = "0.1.1"
     debug   bool
 )
 
@@ -27,10 +27,12 @@ type PriceData struct {
 type Response []PriceData
 
 func doEvery(d time.Duration, f func(time.Time)) {
+    f(time.Now()) // Execute immediately
     for x := range time.Tick(d) {
         f(x)
     }
 }
+
 
 func pushToInflux(t time.Time) {
     priceArea := os.Getenv("PRICE_AREA")
